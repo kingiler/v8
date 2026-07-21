@@ -1060,6 +1060,12 @@ void CaptureAsyncStackTrace(Isolate* isolate, Handle<JSPromise> promise,
                                     isolate);
       builder->AppendPromiseCombinatorFrame(function, combinator);
 
+      if (context->IsNativeContext()) {
+        // NativeContext is used as a marker that the closure was already
+        // called. We can't access the reject element context any more.
+        return;
+      }
+
       // Now peak into the Promise.all() resolve element context to
       // find the promise capability that's being resolved when all
       // the concurrent promises resolve.
@@ -1079,6 +1085,12 @@ void CaptureAsyncStackTrace(Isolate* isolate, Handle<JSPromise> promise,
           context->native_context().promise_all_settled(), isolate);
       builder->AppendPromiseCombinatorFrame(function, combinator);
 
+      if (context->IsNativeContext()) {
+        // NativeContext is used as a marker that the closure was already
+        // called. We can't access the reject element context any more.
+        return;
+      }
+
       // Now peak into the Promise.allSettled() resolve element context to
       // find the promise capability that's being resolved when all
       // the concurrent promises resolve.
@@ -1096,6 +1108,12 @@ void CaptureAsyncStackTrace(Isolate* isolate, Handle<JSPromise> promise,
       Handle<JSFunction> combinator(context->native_context().promise_any(),
                                     isolate);
       builder->AppendPromiseCombinatorFrame(function, combinator);
+
+      if (context->IsNativeContext()) {
+        // NativeContext is used as a marker that the closure was already
+        // called. We can't access the reject element context any more.
+        return;
+      }
 
       // Now peak into the Promise.any() reject element context to
       // find the promise capability that's being resolved when any of
