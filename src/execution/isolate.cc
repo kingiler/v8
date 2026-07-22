@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <errno.h>
 #include <fstream>
 #include <memory>
 #include <sstream>
@@ -149,6 +150,8 @@
 #if USE_SIMULATOR
 #include "src/execution/simulator-base.h"
 #endif
+
+#define EPROT 98
 
 extern "C" const uint8_t *v8_Default_embedded_blob_code_codeptr_;
 extern "C" const uint8_t v8_Default_embedded_blob_code_[];
@@ -1006,6 +1009,7 @@ bool IsBuiltinFunction(Isolate* isolate, HeapObject object, Builtin builtin) {
 
 void CaptureAsyncStackTrace(Isolate* isolate, Handle<JSPromise> promise,
                             CallSiteBuilder* builder) {
+  int old_errno = errno;
   while (!builder->Full()) {
     // Check that the {promise} is not settled.
     if (promise->status() != Promise::kPending) return;
@@ -1068,6 +1072,10 @@ void CaptureAsyncStackTrace(Isolate* isolate, Handle<JSPromise> promise,
       Handle<PromiseCapability> capability(
           PromiseCapability::cast(context->get(index)), isolate);
       if (!capability->promise().IsJSPromise()) return;
+      if (errno == EPROT) {
+        errno = old_errno;
+        return;
+      }
       promise = handle(JSPromise::cast(capability->promise()), isolate);
     } else if (IsBuiltinFunction(
                    isolate, reaction->fulfill_handler(),
@@ -1087,6 +1095,10 @@ void CaptureAsyncStackTrace(Isolate* isolate, Handle<JSPromise> promise,
       Handle<PromiseCapability> capability(
           PromiseCapability::cast(context->get(index)), isolate);
       if (!capability->promise().IsJSPromise()) return;
+      if (errno == EPROT) {
+        errno = old_errno;
+        return;
+      }
       promise = handle(JSPromise::cast(capability->promise()), isolate);
     } else if (IsBuiltinFunction(isolate, reaction->reject_handler(),
                                  Builtin::kPromiseAnyRejectElementClosure)) {
@@ -1104,6 +1116,10 @@ void CaptureAsyncStackTrace(Isolate* isolate, Handle<JSPromise> promise,
       Handle<PromiseCapability> capability(
           PromiseCapability::cast(context->get(index)), isolate);
       if (!capability->promise().IsJSPromise()) return;
+      if (errno == EPROT) {
+        errno = old_errno;
+        return;
+      }
       promise = handle(JSPromise::cast(capability->promise()), isolate);
     } else if (IsBuiltinFunction(isolate, reaction->fulfill_handler(),
                                  Builtin::kPromiseCapabilityDefaultResolve)) {
